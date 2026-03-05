@@ -4,9 +4,25 @@ from PIL import Image
 
 # --- Web App UI Setup ---
 st.set_page_config(page_title="Ultimate Setup Studio", page_icon="🖥️", layout="wide")
+
+# Custom CSS to make the Primary Button Purple
+st.markdown("""
+<style>
+button[kind="primary"] {
+    background-color: rgb(120, 60, 230) !important;
+    border-color: rgb(120, 60, 230) !important;
+    color: white !important;
+}
+button[kind="primary"]:hover {
+    background-color: rgb(100, 40, 210) !important;
+    border-color: rgb(100, 40, 210) !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("🖥️ Ultimate Setup Studio")
 st.markdown("**Created by Sajjad SABOUR**")
-st.markdown("*Version 0.3*")
+st.markdown("*Version 0.4*")
 st.write("Upload your product, dial in your staging, and generate a photorealistic Nano Banana prompt.")
 
 st.divider()
@@ -155,7 +171,11 @@ if st.button("Generate Master Prompt ✨", type="primary"):
 
                 else:
                     # --- MODE 2: CREATIVE STAGING ---
-                    mandatory_prefix = "Ultra-realistic photograph, EXACT 1:1 GEOMETRY MATCH to reference, identical original 3D structure, ZERO new geometrical forms, "
+                    
+                    # Lock the camera angle only if the user hasn't chosen a specific lens
+                    angle_lock = "IDENTICAL CAMERA ANGLE AND PERSPECTIVE, " if selected_lens == "Let the AI decide" else ""
+                    
+                    mandatory_prefix = f"Ultra-realistic photograph, EXACT 1:1 GEOMETRY MATCH to reference, identical original 3D structure, ZERO new geometrical forms, {angle_lock}"
                     
                     if desk_setup:
                         mandatory_prefix += f"adding ONLY these objects: {desk_setup}, "
