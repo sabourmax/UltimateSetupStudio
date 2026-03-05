@@ -6,7 +6,7 @@ from PIL import Image
 st.set_page_config(page_title="Ultimate Setup Studio", page_icon="🖥️", layout="wide")
 st.title("🖥️ Ultimate Setup Studio")
 st.markdown("**Created by Sajjad SABOUR**")
-st.write("Upload a base image of your desk or chair, define your staging, and generate the ultimate Nano Banana prompt.")
+st.write("Upload your product, dial in your staging, and generate a photorealistic Nano Banana prompt.")
 
 st.divider()
 
@@ -42,21 +42,25 @@ with col1:
         "1. Select Upload Mode:", 
         [
             "🧊 Mode 1: Simple 3D Model (Upgrades to Photoreal Studio Lighting)", 
-            "📸 Mode 2: Rendered 3D Image / Photo (Enhances Commercial Realism)"
+            "📸 Mode 2: Existing Photo / Render (Enhances Commercial Realism)"
         ]
     )
     
-    uploaded_file = st.file_uploader("2. Upload your Image:", type=["jpg", "jpeg", "png"])
+    uploaded_file = st.file_uploader("2. Upload Product Image (Desk/Chair):", type=["jpg", "jpeg", "png"])
     
     desk_setup = st.text_input(
         "3. Desk Setup & Accessories (Optional):", 
-        placeholder="e.g., Add a dual-monitor PC setup, mechanical keyboard... (Leave empty to keep exact original items)"
+        placeholder="e.g., Add a dual-monitor PC setup... (Leave empty to keep surfaces completely bare)"
     )
     
     environment = st.text_input(
         "4. Environment / Background (Optional):", 
-        placeholder="e.g., A sunlit home office, dark gaming room... (Leave empty for a clean studio space)"
+        placeholder="e.g., A sunlit home office... (Leave empty for a clean minimal space)"
     )
+    
+    st.markdown("### 🧍 Character Injection (Optional)")
+    uploaded_character = st.file_uploader("Upload Character Reference Image:", type=["jpg", "jpeg", "png"])
+    character_details = st.text_input("Character Details & Pose:", placeholder="e.g., Sitting at the desk typing on a laptop, professional attire...")
 
 with col2:
     st.markdown("### ⚙️ Camera & Lighting Controls")
@@ -70,10 +74,9 @@ with col2:
         "Camera Lens:", 
         [
             "Let the AI decide",
-            "14mm Ultra-Wide (Great for sweeping room interiors)",
-            "35mm Standard Cinematic",
-            "50mm Human Eye Perspective",
-            "85mm Telephoto (Perfect for character focal points)",
+            "14mm Ultra-Wide (Shows the whole room and desk setup)",
+            "35mm Standard Cinematic (Natural human perspective)",
+            "50mm Portrait (Focuses closely on the desk/chair)",
             "Macro Lens (Extreme close-up detail)"
         ]
     )
@@ -82,9 +85,8 @@ with col2:
         "Depth of Field (Bokeh):", 
         [
             "Let the AI decide",
-            "Heavy Bokeh / Shallow DOF (Subject crisp, background very blurry)",
-            "Subtle DOF (Slight background blur for professional cinematic look)",
-            "Deep Focus / f/16 (Everything is perfectly in focus)"
+            "Shallow DOF (Product is crisp, background office is blurry)",
+            "Deep Focus / f/16 (Everything is perfectly in focus for catalogs)"
         ]
     )
     
@@ -102,7 +104,7 @@ with col2:
 
 if st.button("Generate Master Prompt ✨", type="primary"):
     if not uploaded_file:
-        st.warning("Please upload an image first!")
+        st.warning("Please upload a primary product image first!")
     else:
         with st.spinner("Analyzing geometry and staging the environment..."):
             try:
@@ -116,42 +118,60 @@ if st.button("Generate Master Prompt ✨", type="primary"):
 
                 # --- DYNAMIC INSTRUCTIONS ---
                 
-                # 1. Handle the Environment (Enforcing the minimal/clean baseline)
+                # 1. Handle the Environment
                 base_env = "The overall aesthetic MUST be a modern, minimal, and clean space designed to highlight the premium desk and accessories."
                 if environment:
-                    env_instruction = f"{base_env} Specifically, place the setup in this environment: '{environment}', blending these details into the minimal baseline."
+                    env_instruction = f"{base_env} Specifically, place the setup in this highly realistic environment: '{environment}', blending these details into the minimal baseline."
                 else:
-                    env_instruction = f"{base_env} Keep the background as a clean, empty, modern studio space."
+                    env_instruction = f"{base_env} Keep the background as a clean, empty, modern photography studio space."
 
                 # 2. Handle the Desk Setup / Accessories
                 if desk_setup:
-                    setup_instruction = f"Add or modify the desk accessories with these specific items: '{desk_setup}'. Ensure they look highly realistic and premium."
+                    setup_instruction = f"Add or modify the desk accessories with these specific items: '{desk_setup}'. Ensure they look like real physical objects."
                 else:
-                    setup_instruction = f"Keep the desk accessories exactly as they are in the reference image without adding any new random objects or clutter."
+                    setup_instruction = f"LEAVE SURFACES BARE. Do not add any extra clutter, laptops, keyboards, plants, or mugs to the desk surfaces. Keep the products exactly as empty as the reference image."
 
-                # 3. Handle the Input Mode (Both enforce strict core geometry)
-                geometry_lock = "CRITICAL INSTRUCTION: You MUST strictly enforce keeping the exact same 3D structure, geometry, shapes, and design of the core desk, chair, and main products as the uploaded image. Do not alter their core physical design."
+                # 3. Handle the Character
+                char_instruction = ""
+                if uploaded_character or character_details:
+                    char_instruction = f"Add a highly realistic human character to the scene. "
+                    if character_details:
+                        char_instruction += f"Pose and details: '{character_details}'. "
+                    if uploaded_character:
+                        char_instruction += "Use the SECOND attached image as a visual reference for this character's appearance and face. "
+
+                # 4. Handle Geometry & Realism (Forcing "Photo" over "Render")
+                geometry_lock = "CRITICAL INSTRUCTION: Analyze the exact geometry of the primary product. You MUST strictly enforce keeping the exact same 3D structure, geometry, shapes, and design. Do not alter their core physical design."
                 
                 if "Mode 1" in input_mode:
-                    mode_instruction = f"Focus on converting this simple 3D model into a breathtaking, photorealistic image with professional studio lighting and ultra-realistic materials."
+                    mode_instruction = f"Focus on converting this simple 3D model into a breathtaking, ultra-realistic photograph captured with a high-end camera. Use true-to-life physical materials. It must look like a real photo, NOT a 3D render."
                 else:
-                    mode_instruction = f"Focus on enhancing the realism of this existing render/photo to a high-end commercial catalog standard, applying premium textures and perfect staging."
+                    mode_instruction = f"Focus on enhancing the realism of this image to a high-end commercial photography standard. It must look like a real photo taken with a high-end real-world camera, NOT a 3D render."
 
-                # Combine everything into the final AI prompt
+                # Combine into the final instruction
                 instruction = (
-                    f"Act as a strict structural analyzer and expert commercial lighting artist for a premium desk company. Look at the attached image. "
+                    f"Act as a strict structural analyzer and expert commercial photography director for a premium desk company. Look at the attached image(s). "
                     f"{geometry_lock} "
                     f"{mode_instruction} "
                     f"{setup_instruction} "
                     f"{env_instruction} "
+                    f"{char_instruction} "
                     f"Apply these camera and lighting settings: Lens: {selected_lens}, Depth of Field: {selected_dof}, Lighting: {selected_lighting}. "
-                    f"Write a sparse, comma-separated Nano Banana prompt focused entirely on the geometry, materials, staging, and lighting. DO NOT write conversational text or full sentences."
+                    f"Write a sparse, comma-separated Nano Banana prompt focused entirely on describing a photorealistic image, materials, staging, and lighting. DO NOT write conversational text or full sentences."
                 )
                 
-                # Using Flash for speed and stability
+                # Setup contents list (Instruction + Base Image)
+                api_contents = [instruction, img]
+                
+                # If a character image is uploaded, append it so Gemini can see both
+                if uploaded_character:
+                    char_img = Image.open(uploaded_character)
+                    api_contents.append(char_img)
+                
+                # Call the AI model
                 response = client.models.generate_content(
                     model='gemini-2.5-flash',
-                    contents=[instruction, img]
+                    contents=api_contents
                 )
                 
                 # Save the generated prompt to session state
