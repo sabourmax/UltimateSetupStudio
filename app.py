@@ -106,7 +106,7 @@ if st.button("Generate Master Prompt ✨", type="primary"):
     if not uploaded_file:
         st.warning("Please upload a primary product image first!")
     else:
-        with st.spinner("Analyzing geometry and staging the environment..."):
+        with st.spinner("Analyzing geometry and locking structure..."):
             try:
                 img = Image.open(uploaded_file)
                 
@@ -116,65 +116,52 @@ if st.button("Generate Master Prompt ✨", type="primary"):
                 else:
                     final_ar_tag = f"--ar {selected_ar}"
 
-                # --- DYNAMIC INSTRUCTIONS ---
+                # --- 1. HARDCODED STRUCTURAL LOCKS ---
+                # We force Gemini to prepend this exact string to the final output so the image AI cannot ignore it.
+                mandatory_prefix = "Ultra-realistic photograph, EXACT 1:1 GEOMETRY MATCH to reference, identical original 3D structure, ZERO new geometrical forms, "
                 
-                # 1. Handle the Environment
-                base_env = "The overall aesthetic MUST be a modern, minimal, and clean space designed to highlight the premium desk and accessories."
-                if environment:
-                    env_instruction = f"{base_env} Specifically, place the setup in this highly realistic environment: '{environment}', blending these details into the minimal baseline."
-                else:
-                    env_instruction = f"{base_env} Keep the background as a clean, empty, modern photography studio space."
-
-                # 2. Handle the Desk Setup / Accessories
                 if desk_setup:
-                    setup_instruction = f"Add or modify the desk accessories with these specific items: '{desk_setup}'. Ensure they look like real physical objects."
+                    mandatory_prefix += f"adding ONLY these objects: {desk_setup}, "
                 else:
-                    setup_instruction = f"LEAVE SURFACES BARE. Do not add any extra clutter, laptops, keyboards, plants, or mugs to the desk surfaces. Keep the products exactly as empty as the reference image."
+                    mandatory_prefix += "BARE SURFACES, absolutely ZERO added objects, NO extra clutter, NO props, "
 
-                # 3. Handle the Character
+                # --- 2. ENVIRONMENT ---
+                base_env = "modern, minimal, clean commercial space"
+                if environment:
+                    env_instruction = f"Environment: {environment} integrated into a {base_env}."
+                else:
+                    env_instruction = f"Environment: clean, empty, {base_env} studio background."
+
+                # --- 3. CHARACTER ---
                 char_instruction = ""
                 if uploaded_character or character_details:
-                    char_instruction = f"Add a highly realistic human character to the scene. "
+                    char_instruction = f"Feature a highly realistic human character. "
                     if character_details:
-                        char_instruction += f"Pose and details: '{character_details}'. "
+                        char_instruction += f"Pose/Details: '{character_details}'. "
                     if uploaded_character:
-                        char_instruction += "Use the SECOND attached image as a visual reference for this character's appearance and face. "
+                        char_instruction += "Match the character's face/appearance to the SECOND reference image. "
 
-                # 4. Handle Geometry & Realism (Forcing "Photo" over "Render")
-                geometry_lock = "CRITICAL INSTRUCTION: Analyze the exact geometry of the primary product. You MUST strictly enforce keeping the exact same 3D structure, geometry, shapes, and design. Do not alter their core physical design."
-                
-                if "Mode 1" in input_mode:
-                    mode_instruction = f"Focus on converting this simple 3D model into a breathtaking, ultra-realistic photograph captured with a high-end camera. Use true-to-life physical materials. It must look like a real photo, NOT a 3D render."
-                else:
-                    mode_instruction = f"Focus on enhancing the realism of this image to a high-end commercial photography standard. It must look like a real photo taken with a high-end real-world camera, NOT a 3D render."
-
-                # Combine into the final instruction
+                # --- 4. THE MASTER INSTRUCTION ---
                 instruction = (
-                    f"Act as a strict structural analyzer and expert commercial photography director for a premium desk company. Look at the attached image(s). "
-                    f"{geometry_lock} "
-                    f"{mode_instruction} "
-                    f"{setup_instruction} "
-                    f"{env_instruction} "
-                    f"{char_instruction} "
-                    f"Apply these camera and lighting settings: Lens: {selected_lens}, Depth of Field: {selected_dof}, Lighting: {selected_lighting}. "
-                    f"Write a sparse, comma-separated Nano Banana prompt focused entirely on describing a photorealistic image, materials, staging, and lighting. DO NOT write conversational text or full sentences."
+                    f"Act as an expert commercial photography director. Analyze the attached image(s).\n\n"
+                    f"CRITICAL RULE: You MUST start your generated prompt EXACTLY with this phrase word-for-word:\n"
+                    f"\"{mandatory_prefix}\"\n\n"
+                    f"After typing that exact phrase, continue the prompt by describing the premium materials of the existing desk/chair, the lighting ({selected_lighting}), the camera lens ({selected_lens}), depth of field ({selected_dof}), and the environment ({env_instruction}).\n"
+                    f"{char_instruction}\n"
+                    f"Write everything as a sparse, comma-separated list of keywords. DO NOT write full sentences. DO NOT use the words 'render', '3D', or 'octane'. Describe it as a real physical photograph."
                 )
                 
-                # Setup contents list (Instruction + Base Image)
                 api_contents = [instruction, img]
                 
-                # If a character image is uploaded, append it so Gemini can see both
                 if uploaded_character:
                     char_img = Image.open(uploaded_character)
                     api_contents.append(char_img)
                 
-                # Call the AI model
                 response = client.models.generate_content(
                     model='gemini-2.5-flash',
                     contents=api_contents
                 )
                 
-                # Save the generated prompt to session state
                 st.session_state.generated_prompt = f"{response.text.strip()} {final_ar_tag}"
                 
             except Exception as e:
