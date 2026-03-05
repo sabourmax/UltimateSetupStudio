@@ -3,10 +3,10 @@ from google import genai
 from PIL import Image
 
 # --- Web App UI Setup ---
-st.set_page_config(page_title="Nano Banana Studio", page_icon="🍌", layout="wide")
-st.title("🍌 Nano Banana Studio: Prompt Engineer")
+st.set_page_config(page_title="Ultimate Setup Studio", page_icon="🖥️", layout="wide")
+st.title("🖥️ Ultimate Setup Studio")
 st.markdown("**Created by Sajjad SABOUR**")
-st.write("Upload a base image, dial in your pro camera settings, and get an editable master prompt.")
+st.write("Upload a base image of your desk or chair, define your staging, and generate the ultimate Nano Banana prompt.")
 
 st.divider()
 
@@ -38,31 +38,28 @@ col1, col2 = st.columns([1, 1.2])
 with col1:
     st.markdown("### 📝 Core Settings")
     
-    input_type = st.radio(
-        "1. What are you uploading?", 
-        ["🧊 Simple 3D Render / Blockout (Strict Geometry, Upgraded Lighting)", "🖌️ Hand-Drawn Sketch (Creative Interpretation)"]
+    input_mode = st.radio(
+        "1. Select Upload Mode:", 
+        [
+            "🧊 Mode 1: Simple 3D Model (Upgrades to Photoreal Studio Lighting)", 
+            "📸 Mode 2: Rendered 3D Image / Photo (Enhances Commercial Realism)"
+        ]
     )
     
     uploaded_file = st.file_uploader("2. Upload your Image:", type=["jpg", "jpeg", "png"])
     
-    # NEW: Clearer options between Photo and Render
-    target_style = st.selectbox(
-        "3. Final Output Look:", 
-        [
-            "Photorealistic Photography (Like a real camera)", 
-            "High-End 3D Render (Octane / V-Ray / Unreal)", 
-            "Cinematic Movie Still", 
-            "Anime / Cel Shaded", 
-            "Cyberpunk / Neon Aesthetic"
-        ]
+    desk_setup = st.text_input(
+        "3. Desk Setup & Accessories (Optional):", 
+        placeholder="e.g., Add a dual-monitor PC setup, mechanical keyboard... (Leave empty to keep exact original items)"
     )
     
-    background_details = st.text_input("4. Change Background (Optional):", placeholder="e.g., A neon-lit gaming room, a modern home office...")
-    
-    extra_details = st.text_input("5. Extra Details (Optional):", placeholder="e.g., Make the desk walnut wood...")
+    environment = st.text_input(
+        "4. Environment / Background (Optional):", 
+        placeholder="e.g., A sunlit home office, dark gaming room... (Leave empty for a clean studio space)"
+    )
 
 with col2:
-    st.markdown("### ⚙️ Pro Camera Controls")
+    st.markdown("### ⚙️ Camera & Lighting Controls")
     
     selected_ar = st.selectbox(
         "Aspect Ratio:", 
@@ -107,7 +104,7 @@ if st.button("Generate Master Prompt ✨", type="primary"):
     if not uploaded_file:
         st.warning("Please upload an image first!")
     else:
-        with st.spinner("Analyzing layout and engineering the prompt..."):
+        with st.spinner("Analyzing geometry and staging the environment..."):
             try:
                 img = Image.open(uploaded_file)
                 
@@ -117,36 +114,47 @@ if st.button("Generate Master Prompt ✨", type="primary"):
                 else:
                     final_ar_tag = f"--ar {selected_ar}"
 
-                bg_instruction = f" Replace the background/environment with: '{background_details}'." if background_details else " Keep the background exact."
-
-                # --- UPGRADED 3D RENDER INSTRUCTIONS ---
-                if "3D Render" in input_type:
-                    instruction = (
-                        f"Act as a strict structural analyzer and expert lighting artist for Nano Banana. Look at the attached 3D blockout. "
-                        f"1. STRUCTURE: Describe ONLY the exact 3D models, geometry, and shapes visible in the reference image. DO NOT add, hallucinate, or suggest any new objects, props, or clutter. "
-                        f"2. LIGHTING & MATERIALS: Completely ignore the original basic/flat lighting of the blockout. Re-imagine and elevate the scene by applying breathtaking, professional lighting and ultra-realistic materials to the existing shapes. "
-                        f"{('User overrides: ' + extra_details) if extra_details else ''}. {bg_instruction} "
-                        f"Target look: {target_style}. Camera Lens: {selected_lens}. Depth of Field: {selected_dof}. Lighting Setup: {selected_lighting}. "
-                        f"Write a sparse, comma-separated prompt focused entirely on the exact geometry, upgraded materials, and the new elevated lighting. DO NOT write full sentences."
-                    )
-                else:
-                    instruction = (
-                        f"Act as an expert AI prompt engineer for Nano Banana. Look at the attached sketch. "
-                        f"Use the sketch as a compositional guide. "
-                        f"{('Additional details from user: ' + extra_details) if extra_details else ''}. {bg_instruction} "
-                        f"Creatively turn this into a {target_style} masterpiece with these photographic settings:\n"
-                        f"- Lens: {selected_lens}\n"
-                        f"- Depth of Field: {selected_dof}\n"
-                        f"- Lighting: {selected_lighting}\n"
-                        f"Write a highly detailed, comma-separated prompt describing the scene, textures, and lighting. DO NOT output conversational text, just the raw prompt."
-                    )
+                # --- DYNAMIC INSTRUCTIONS ---
                 
+                # 1. Handle the Environment (Enforcing the minimal/clean baseline)
+                base_env = "The overall aesthetic MUST be a modern, minimal, and clean space designed to highlight the premium desk and accessories."
+                if environment:
+                    env_instruction = f"{base_env} Specifically, place the setup in this environment: '{environment}', blending these details into the minimal baseline."
+                else:
+                    env_instruction = f"{base_env} Keep the background as a clean, empty, modern studio space."
+
+                # 2. Handle the Desk Setup / Accessories
+                if desk_setup:
+                    setup_instruction = f"Add or modify the desk accessories with these specific items: '{desk_setup}'. Ensure they look highly realistic and premium."
+                else:
+                    setup_instruction = f"Keep the desk accessories exactly as they are in the reference image without adding any new random objects or clutter."
+
+                # 3. Handle the Input Mode (Both enforce strict core geometry)
+                geometry_lock = "CRITICAL INSTRUCTION: You MUST strictly enforce keeping the exact same 3D structure, geometry, shapes, and design of the core desk, chair, and main products as the uploaded image. Do not alter their core physical design."
+                
+                if "Mode 1" in input_mode:
+                    mode_instruction = f"Focus on converting this simple 3D model into a breathtaking, photorealistic image with professional studio lighting and ultra-realistic materials."
+                else:
+                    mode_instruction = f"Focus on enhancing the realism of this existing render/photo to a high-end commercial catalog standard, applying premium textures and perfect staging."
+
+                # Combine everything into the final AI prompt
+                instruction = (
+                    f"Act as a strict structural analyzer and expert commercial lighting artist for a premium desk company. Look at the attached image. "
+                    f"{geometry_lock} "
+                    f"{mode_instruction} "
+                    f"{setup_instruction} "
+                    f"{env_instruction} "
+                    f"Apply these camera and lighting settings: Lens: {selected_lens}, Depth of Field: {selected_dof}, Lighting: {selected_lighting}. "
+                    f"Write a sparse, comma-separated Nano Banana prompt focused entirely on the geometry, materials, staging, and lighting. DO NOT write conversational text or full sentences."
+                )
+                
+                # Using Flash for speed and stability
                 response = client.models.generate_content(
                     model='gemini-2.5-flash',
                     contents=[instruction, img]
                 )
                 
-                # Save the generated prompt to session state so it can be edited
+                # Save the generated prompt to session state
                 st.session_state.generated_prompt = f"{response.text.strip()} {final_ar_tag}"
                 
             except Exception as e:
@@ -157,9 +165,7 @@ if st.session_state.generated_prompt:
     st.divider()
     st.subheader("✏️ Review and Edit")
     
-    # The text area allows the user to manually edit the prompt
-    edited_prompt = st.text_area("Tweak your prompt here:", value=st.session_state.generated_prompt, height=150)
+    edited_prompt = st.text_area("Tweak your Ultimate Setup prompt here:", value=st.session_state.generated_prompt, height=150)
     
     st.success("Ready! Click the copy icon in the top right corner of the box below:")
-    # The code box dynamically updates to show whatever the user typed in the text area above
     st.code(edited_prompt, language="text")
